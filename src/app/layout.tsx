@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Provider } from "@/components/ui/provider";
+import { UserProvider } from "@auth0/nextjs-auth0/client";
+import "prosemirror-view/style/prosemirror.css";
+import { AiContextProvider } from "@/context/AiContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,9 +27,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          src="https://kit.fontawesome.com/9183960e04.js"
+          crossOrigin="anonymous"
+        ></script>
+        <title>Ai Cover Genie</title>
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <UserProvider>
+          <Provider>
+            <AiContextProvider>{children}</AiContextProvider>
+          </Provider>
+        </UserProvider>
       </body>
     </html>
   );
