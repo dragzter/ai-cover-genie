@@ -1,10 +1,8 @@
-// app/api/ai/route.ts
-
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.OPEN_AI_API_KEY, // <-- use process.env here, not $VAR
+  apiKey: process.env.OPEN_AI_API_KEY,
   //baseURL: "https://api.x.ai/v1",
 });
 
@@ -23,79 +21,46 @@ export async function POST(request: NextRequest) {
         {
           role: "user",
           content: `
-You are an expert resume writer and HTML formatting specialist. Your job is to rewrite the user's resume based on their existing resume, job description, and instructions, and return it ONLY in valid HTML rich text.
+            You are an expert resume writer and HTML formatting specialist. Your job is to rewrite the user's resume based on their existing resume, job description, and instructions, and return it in plain text, use spaces and newlines for layout.
+            
+            🚫 DO NOT add skills that are not on the resume, do not add experience that is not on the original resume.
+            
+            ❌ DO NOT use Markdown or triple backticks (\`\`\`html) in your output, your only output should be the resume.
+           
+            ✅ You may:
+            - Rephrase, reorder, and emphasize existing content
+            - Highlight experience that matches the job description
+            
+            ✅ Requirements:
+            1. Resume must be ATS-optimized:
+               - Headers must be in all caps
+               - Use standard headers: "Summary", "Skills", "Experience", "Education"
+               - Skills should be inlines, not bulleted
+               - Job title and date range should be on the same line
+               
+            In the "Experience" section, for every job entry
+            - Add an extra newline between sections.  
+            - They MUST be styled like this:
+            
+            Job Title (uppercase) - Date Range 
+            Job Description (bulleted list)
+            
+            Job Title 2 (uppercase) - Date Range 
+            Job Description 2 (bulleted list)
+           
+            ...
 
-🚫 DO NOT invent or fabricate anything.
+            ### 📄 USER INPUTS
 
-✅ You may:
-- Rephrase, reorder, and emphasize existing content
-- Highlight experience that matches the job description
-
-✅ Requirements:
-1. Resume must be ATS-optimized:
-   - Use standard headers: "Summary", "Experience", "Education"
-   - NO tables, columns, or images
-   - Use simple semantic HTML only
-
-2. DO NOT wrap output in <html>, <head>, or <body>. Just provide inner content starting from <h1>.  
-
-❌ DO NOT use Markdown or triple backticks (\`\`\`html).
----
-
-💡 VERY IMPORTANT FORMATTING RULE:
-
-In the "Experience" section, for every job entry:
-
-- Job **title** and **date range** MUST appear on the **same line**
-- They MUST be styled like this:
-
-<div style="display: flex; justify-content: space-between;">
-  <strong>Job Title</strong>
-  <span>Date Range</span>
-</div>
-
-- Place the company name below that, and follow it with a bullet list of responsibilities.
-
----
-
-📄 Your output must follow this structure:
-
-1. <h1>[Full Name]</h1>
-2. Contact info
-3. <h2>Summary</h2>
-   <p>...</p>
-4. <h2>Experience</h2>
-   <div style="display: flex; justify-content: space-between;">
-     <strong>Job Title</strong>
-     <span>Start – End</span>
-   </div>
-   <p><em>Company Name</em></p>
-   <ul>
-     <li>Responsibility or achievement</li>
-     ...
-   </ul>
-5. <h2>Education</h2>
-   ...
-
----
-
-REPEAT: You MUST use the exact formatting and HTML structure described above.
-
-DO NOT use <p> tags for job title and date — use the <div> with flex style as shown.
-
----
-
-### 📄 USER INPUTS
-
-**Job Description:**  
-${jobDescription}
-
-**Instructions to the AI:**  
-${instructions}
-
-**Original Resume:**  
-${resume}
-`.trim(),
+            **Job Description:**  
+            ${jobDescription}
+            
+            **Instructions to the AI:**  
+            ${instructions}
+ 
+            **Original Resume:**  
+            ${resume}
+            `.trim(),
         },
       ],
     });

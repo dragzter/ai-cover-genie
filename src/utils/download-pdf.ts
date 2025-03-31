@@ -1,34 +1,42 @@
 "use client";
 
-import { PDFDocument, StandardFonts } from "pdf-lib";
-// @ts-expect-error
-//import html2pdf from "html2pdf.js";
+import { PDFDocument, StandardFonts, rgb, breakTextIntoLines } from "pdf-lib";
 
-export async function downloadTextAsPdf(text: string, fileName = "resume.pdf") {
+export async function downloadResumeAsPdf(
+  text: string,
+  fileName = "resume.pdf",
+) {
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 
-  console.log(text);
+  const fontSize = 11;
+  const lineHeight = fontSize + 6;
+  // @ts-ignore
+  const textLines = breakTextIntoLines(text, [" "], 1500, () => 105);
+  const textHeight = lineHeight * textLines.length;
+  const numberOfPages = Math.ceil(textHeight / 800);
+  const maxLInesPerPage = Math.floor(800 / lineHeight);
 
-  const fontSize = 12;
-  const margin = 40;
-  const maxWidth = page.getWidth() - margin * 2;
+  debugger;
+  for (let i = 0; i < numberOfPages; i++) {
+    const page = pdfDoc.addPage();
+    const { width, height } = page.getSize();
 
-  const lines = splitTextIntoLines(text, font, fontSize, maxWidth);
+    const chunkedText = textLines.splice(0, maxLInesPerPage);
+    const finalText = chunkedText.join("\n");
 
-  let y = page.getHeight() - margin;
-  lines.forEach((line) => {
-    if (y <= margin) {
-      y = page.getHeight() - margin;
-      pdfDoc.addPage(); // new page if needed
-    }
-    page.drawText(line, { x: margin, y, size: fontSize, font });
-    y -= fontSize + 4;
-  });
+    page.drawText(finalText, {
+      x: 15,
+      y: height - 1.5 * fontSize,
+      size: fontSize,
+      maxWidth: width - 20,
+      lineHeight: fontSize + 6,
+      font: timesRomanFont,
+      color: rgb(0, 0, 0),
+    });
+  }
 
   const pdfBytes = await pdfDoc.save();
-
   const blob = new Blob([pdfBytes], { type: "application/pdf" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -36,44 +44,24 @@ export async function downloadTextAsPdf(text: string, fileName = "resume.pdf") {
   link.click();
 }
 
-function splitTextIntoLines(
-  text: string,
-  font: any,
-  fontSize: number,
-  maxWidth: number,
-): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let line = "";
+export async function downloadResumeAsPdf_v2(html: string) {
+  const response = await fetch("/api/generate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      html,
+    }),
+  });
 
-  for (let word of words) {
-    const testLine = line ? `${line} ${word}` : word;
-    const width = font.widthOfTextAtSize(testLine, fontSize);
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
 
-    if (width < maxWidth) {
-      line = testLine;
-    } else {
-      lines.push(line);
-      line = word;
-    }
-  }
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "resume.pdf";
+  link.click();
 
-  if (line) lines.push(line);
-  return lines;
+  URL.revokeObjectURL(url); // Clean up memory
 }
-
-//
-// export function downloadHtmlAsPdf(elementId: string, fileName = "resume.pdf") {
-//   const element = document.getElementById(elementId);
-//   if (!element) return console.error("Element not found:", elementId);
-//
-//   const opt = {
-//     margin: 0.5,
-//     filename: fileName,
-//     image: { type: "jpeg", quality: 0.98 },
-//     html2canvas: { scale: 2 },
-//     jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-//   };
-//
-//   html2pdf().from(element).set(opt).save();
-// }

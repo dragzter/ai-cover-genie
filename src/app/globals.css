@@ -3,6 +3,7 @@
 	--foreground: #ededed;
 	--dark-brand: #010917;
 	--light-brand-hover: #d9d9d9;
+	--lighter-brand-hover: #e7e7e7;
 	--light-brand: #e8e8e8;
 }
 
@@ -68,8 +69,19 @@ body {
 
 #html-to-pdf {
 	* {
+		font-family: "Times New Roman", serif;
 		color: #000;
-		margin: 0 !important;
+		font-size: 12px;
 		padding: 0 !important;
+		margin-bottom: 5px;
+		
+		h2 {
+			font-weight: bold;
+			text-decoration: underline;
+		}
+		
+		ul, h2 {
+			margin-bottom: 10px;
+		}
 	}
 }

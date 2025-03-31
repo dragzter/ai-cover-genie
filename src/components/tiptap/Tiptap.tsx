@@ -7,16 +7,15 @@ import TextStyle from "@tiptap/extension-text-style";
 import { EditorContent, useCurrentEditor, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import React, { useEffect, useState } from "react";
+import { HStack, Box, Button } from "@chakra-ui/react";
 import {
-  Portal,
-  Select,
-  Stack,
-  createListCollection,
-  HStack,
-  Box,
-  Separator,
-  Spinner,
-} from "@chakra-ui/react";
+  CustomBulletList,
+  Div,
+  CustomHeading,
+  CustomListItem,
+  CustomParagraph,
+} from "@/components/tiptap/util";
+import { useAiContext } from "@/context/AiContext";
 
 export const Tiptap = ({
   text = "",
@@ -26,23 +25,43 @@ export const Tiptap = ({
   loading: boolean;
 }) => {
   const [content, setContent] = useState(text);
+  const [changed, setChanged] = useState(false);
+  const { data, setData } = useAiContext();
+
+  const updateContent = () => {
+    setData(content);
+    setChanged(false);
+  };
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       Color.configure({ types: [TextStyle.name, ListItem.name] }),
-      TextStyle.configure({ types: [ListItem.name] }),
+      //TextStyle.configure({ types: [ListItem.name] }),
       StarterKit.configure({
         bulletList: {
           keepMarks: true,
-          keepAttributes: false,
+          keepAttributes: true,
         },
         orderedList: {
           keepMarks: true,
-          keepAttributes: false,
+          keepAttributes: true,
         },
       }),
+      CustomParagraph,
+      CustomHeading,
+      CustomListItem,
+      CustomBulletList,
+      Div,
     ],
     content,
+    onUpdate: ({ editor }) => {
+      setChanged(true);
+      setContent(editor.getHTML());
+    },
+    parseOptions: {
+      preserveWhitespace: "full",
+    },
   });
 
   useEffect(() => {
@@ -290,8 +309,21 @@ export const Tiptap = ({
           </HStack>
         </div>
       </div>
-      <Box mt={4} borderRadius="md">
-        <EditorContent editor={editor} />
+      <Box position={"relative"} mt={4} borderRadius="md">
+        <EditorContent onChange={() => console.log("hello!")} editor={editor} />
+
+        {changed && (
+          <Button
+            size={"xs"}
+            colorPalette={"blue"}
+            position={"absolute"}
+            onClick={updateContent}
+            bottom={2}
+            right={2}
+          >
+            <i className="fa-solid fa-floppy-disk"></i> Update
+          </Button>
+        )}
       </Box>
     </Box>
   );

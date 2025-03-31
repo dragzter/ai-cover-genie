@@ -12,20 +12,26 @@ import {
   Heading,
   Textarea,
   Field,
-  Separator,
+  Dialog,
+  Portal,
+  CloseButton,
 } from "@chakra-ui/react";
 import Navbar from "@/components/Navbar";
 import { HiUpload } from "react-icons/hi";
-import { RadioGroupComponent } from "@/components/RadioGroup";
 import { Tiptap } from "@/components/tiptap/Tiptap";
 import { useAiContext } from "@/context/AiContext";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { Switch } from "@chakra-ui/react";
 import PdfReader from "@/utils/read-pdf";
-//import { downloadHtmlAsPdf, downloadTextAsPdf } from "@/utils/download-pdf";
+import {
+  downloadResumeAsPdf,
+  downloadResumeAsPdf_v2,
+} from "@/utils/download-pdf";
+import { optimizeResume } from "@/utils/optimize-resume";
 
 export default function Genie() {
+  //
   const { data, setData } = useAiContext();
   const [instructions, setInstructions] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -33,6 +39,11 @@ export default function Genie() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [checked, setChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const onSaveDialog = () => {
+    setOpen(false);
+  };
 
   const fetchData = async () => {
     try {
@@ -52,7 +63,7 @@ export default function Genie() {
 
       formData.append("resume", _text);
 
-      const res = await axios.post("/api/ai", formData, {
+      const res = await axios.post("/api/generate/resume", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -63,7 +74,8 @@ export default function Genie() {
       }
 
       const text = await res.data;
-      setData(text.message);
+
+      setData(optimizeResume(JSON.parse(text.message)));
     } catch (err) {
       console.error("Fetch error:", err);
     } finally {
@@ -156,19 +168,80 @@ export default function Genie() {
                     />
                   </Box>
                 )}
-                <Box>
-                  <Field.Root>
-                    <Field.Label mt={6}>Job Description</Field.Label>
-                  </Field.Root>
-                  <Textarea
-                    border={"1px solid #ccc"}
-                    mt={2}
-                    rows={4}
-                    name={"jobDescription"}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    maxHeight={"150px"}
-                    placeholder="Description..."
-                  />
+                <Box mt={4}>
+                  <Dialog.Root
+                    key={"center"}
+                    placement={"center"}
+                    motionPreset="slide-in-bottom"
+                    lazyMount
+                    open={open}
+                    onOpenChange={(e) => setOpen(e.open)}
+                  >
+                    <Dialog.Trigger asChild>
+                      <Button
+                        _hover={{
+                          bg: "var(--light-brand-hover)",
+                          transition: "0.3s",
+                        }}
+                        mt={"auto"}
+                        width={"100%"}
+                        color={"#000"}
+                        loading={isLoading}
+                        style={{
+                          border: "1px solid #ccc",
+                        }}
+                        bg={"var(--light-brand)"}
+                      >
+                        <i className="fa-regular fa-list"></i>{" "}
+                        {jobDescription ? "Edit" : "Add"} Job Description
+                        {jobDescription && (
+                          <span
+                            style={{
+                              color: "green",
+                              position: "absolute",
+                              left: 8,
+                              fontSize: "20px",
+                            }}
+                          >
+                            <i className="fa-solid fa-circle-check"></i>
+                          </span>
+                        )}
+                      </Button>
+                    </Dialog.Trigger>
+                    <Portal>
+                      <Dialog.Backdrop />
+                      <Dialog.Positioner>
+                        <Dialog.Content>
+                          <Dialog.Header>
+                            <Dialog.Title>Job Description Input</Dialog.Title>
+                          </Dialog.Header>
+                          <Dialog.Body>
+                            <Textarea
+                              border={"1px solid #ccc"}
+                              mt={2}
+                              rows={4}
+                              name={"jobDescription"}
+                              value={jobDescription}
+                              onChange={(e) =>
+                                setJobDescription(e.target.value)
+                              }
+                              maxHeight={"150px"}
+                              placeholder="Description..."
+                            />
+                          </Dialog.Body>
+                          <Dialog.Footer>
+                            <Dialog.ActionTrigger asChild>
+                              <Button variant="outline">Cancel</Button>
+                            </Dialog.ActionTrigger>
+                            <Button onClick={onSaveDialog}>Save</Button>
+                          </Dialog.Footer>
+                          <Dialog.CloseTrigger asChild>
+                            <CloseButton size="sm" />
+                          </Dialog.CloseTrigger>
+                        </Dialog.Content>
+                      </Dialog.Positioner>
+                    </Portal>
+                  </Dialog.Root>
                 </Box>
                 <Box>
                   <Field.Root>
@@ -222,20 +295,43 @@ export default function Genie() {
               >
                 <i className="fa-regular fa-sparkles"></i> Optimize Resume
               </Button>
-              <div style={{ display: "none" }}>
-                <div
-                  id="html-to-pdf"
-                  dangerouslySetInnerHTML={{ __html: data }}
-                />
-              </div>
+
+              {/*<Button*/}
+              {/*  _hover={{*/}
+              {/*    bg: "var(--lighter-brand-hover)",*/}
+              {/*    transition: "0.3s",*/}
+              {/*  }}*/}
+              {/*  style={{*/}
+              {/*    border: "1px solid #ddd",*/}
+              {/*  }}*/}
+              {/*  mt={3}*/}
+              {/*  width={"100%"}*/}
+              {/*  loading={isLoading}*/}
+              {/*  loadingText={"Downloading..."}*/}
+              {/*  onClick={() => {*/}
+              {/*    downloadResumeAsPdf(data);*/}
+              {/*  }}*/}
+              {/*>*/}
+              {/*  <i className="fa-solid fa-down-to-bracket"></i> Download PDF*/}
+              {/*</Button>*/}
 
               <Button
+                _hover={{
+                  bg: "var(--lighter-brand-hover)",
+                  transition: "0.3s",
+                }}
+                style={{
+                  border: "1px solid #ddd",
+                }}
                 mt={3}
-                onClick={() =>
-                  downloadHtmlAsPdf("html-to-pdf", "optimized-resume.pdf")
-                }
+                width={"100%"}
+                loading={isLoading}
+                loadingText={"Downloading..."}
+                onClick={() => {
+                  downloadResumeAsPdf_v2(data);
+                }}
               >
-                Download PDF
+                <i className="fa-solid fa-down-to-bracket"></i> Download PDF
               </Button>
             </Box>
           </Box>
